@@ -1,3 +1,4 @@
+{-# OverloadedStrings #-}
 
 -- This provides the basic algebraic data types for working with IRC messages.
 -- This data type is the core of ErrBot. Basically, as soon as data comes in
@@ -6,8 +7,43 @@
 -- sliced, diced, and hashed, they're written back to IRC, maybe.
 
 module Network.ErrBot.Irc.Types
-    ( IrcInput(..)
+    ( Nick
+    , NickList
+    , Username
+    , Host
+    , Server
+    , RealName
+    , MessageText
+    , Channel
+    , ChannelList
+    , Recipient
+    , RecipientList
+    , IrcInput(..)
+    , ErrorType(..)
+    , Replies(..)
+    , errorCodes
     ) where
+
+
+-- For performance, we'll keep most of the data in ByteStrings.
+import qualified Data.ByteString as B
+import qualified Data.Map as M
+
+
+-- Some type aliases to make things easier.
+type Nick        = B.ByteString
+type NickList    = [Nick]
+type Username    = B.ByteString
+type Host        = B.ByteString
+type Server      = B.ByteString
+type RealName    = B.ByteString
+type MessageTest = B.ByteString
+type Channel     = B.ByteString
+type ChannelList = [Channel]
+
+-- This is the data type for any kind of message recipient.
+type Recipient = Either Nick Channel
+type RecipientList = [Recipient] 
 
 -- # Commands
 --
@@ -24,6 +60,21 @@ module Network.ErrBot.Irc.Types
 -- * PONG => ERR_NOORIGIN, ERR_NOSUCHSERVER
 -- * ISON <nick>[<space><nick>] => RPL_ISON, ERR_NEEDMOREPARAMS
 --
+
+-- This is the algebraic data type describing everything that goes into and out
+-- of IRC.
+data IrcInput
+    = IrcNick Nick
+    | IrcUser Username Host Server RealName
+    | IrcQuit MessageText
+    | IrcJoin ChannelList
+    | IrcTopic Channel (Maybe MessageText)
+    | IrcNames Channel
+    | IrcPrivMsg RecipientList MessageText
+    | IrcPing Server
+    | IrcPong (Maybe Server)
+    | IrcIsOn NickList
+    | IrcError ErrorType MessageText
 
 -- # Errors
 --
@@ -53,6 +104,63 @@ module Network.ErrBot.Irc.Types
 -- * ERR_UNKNOWNCOMMAND   -- 421
 -- * ERR_WILDTOPLEVEL     -- 414
 --
+
+-- These are the errors.
+data ErrorType
+    = AlreadyRegistered
+    | BadChanMask
+    | BadChannelKey
+    | BannedFromChan
+    | CannotSendToChan
+    | ChannelIsFull
+    | ChanOPrivsNeeded
+    | ErroneusNickname
+    | InviteOnlyChan
+    | NeedMoreParams
+    | NickCollision
+    | NickNameInUse
+    | NoNickNameGiven
+    | NoOrigin
+    | NoRecipient
+    | NoSuchChannel
+    | NoSuchNick
+    | NoSuchServer
+    | NoTextToSend
+    | NotOnChannel
+    | NoTopLevel
+    | TooManyChannels
+    | TooManyTargets
+    | UnknownCommand
+    | WildTopLevel
+
+errorCodes :: M.Map Int ErrorType
+errorCodes = M.fromList
+  [ (462, AlreadyRegistered)
+  , (476, BadChanMask)
+  , (475, BadChannelKey)
+  , (474, BannedFromChan)
+  , (404, CannotSendToChan)
+  , (471, ChannelIsFull)
+  , (482, ChanOPrivsNeeded)
+  , (432, ErroneusNickname)
+  , (473, InviteOnlyChan)
+  , (461, NeedMoreParams)
+  , (436, NickCollision)
+  , (433, NicknameInUse)
+  , (431, NoNicknameGiven)
+  , (409, NoOrigin)
+  , (411, NoRecipient)
+  , (403, NoSuchChannel)
+  , (401, NoSuchNick)
+  , (402, NoSuchServer)
+  , (412, NoTextToSend)
+  , (442, NotOnChannel)
+  , (413, NoTopLevel)
+  , (405, TooManyChannels)
+  , (407, TooManyTargets)
+  , (421, UnknownCommand)
+  , (414, WildTopLevel)
+  ]
 
 -- # Replies
 --
