@@ -27,6 +27,7 @@ Executable errbot
   
   Build-depends:       
       base >=4.3 && <5
+    , attoparsec >=0.10 && <0.11
   
   -- Modules not exported by this package.
   -- Other-modules:       
